@@ -2,11 +2,7 @@
 # /// script
 # dependencies = []
 # ///
-"""make_config — generate adws/flowie_config/flowie.config.yaml with great defaults.
-
-Usage:
-    uv run <skill>/scripts/make_config.py [--force]
-"""
+"""Write .flowie/flowie.config.yaml from the default template."""
 
 import argparse
 import shutil
@@ -21,7 +17,7 @@ def main() -> int:
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
-    dest = Path.cwd() / "adws" / "flowie_config" / "flowie.config.yaml"
+    dest = Path.cwd() / ".flowie" / "flowie.config.yaml"
     if dest.exists() and not args.force:
         print(f"{dest} already exists — use --force to overwrite")
         return 1

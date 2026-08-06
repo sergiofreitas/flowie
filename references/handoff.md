@@ -25,7 +25,7 @@ class EnvelopeBase(BaseModel):
 
 `status` is load-bearing: an envelope that parses but reports `status="fail"` raises, failing the phase. An agent declaring its own failure is not a successful phase.
 
-The starter types in `adw_modules/data_types.py`:
+The starter types in `flowie_runtime/data_types.py`:
 
 ```python
 class GenericOutput(EnvelopeBase):
@@ -131,7 +131,7 @@ The `## Report` section shows the exact JSON shape of the declared output type �
 ## Session directory layout
 
 ```
-adws/adw_data/sessions/{adw_id}/
+.flowie/data/sessions/{adw_id}/
 ├── agent_map.json          agent name → coding-agent session_id + model
 ├── context_handoff/        the ONE place agents write files for the agents that follow
 └── {agent_name}/

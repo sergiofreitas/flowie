@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flowie"
+version = "0.1.0"
+description = "Repeatable agents-plus-code workflows for Codex"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "Sergio Freitas" },
+]
+dependencies = [
+  "pydantic",
+  "python-dotenv",
+  "pyyaml",
+  "rich",
+]
+
+[project.scripts]
+flowie = "flowie_runtime.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["flowie_runtime*"]
+
+[tool.setuptools.package-data]
+flowie_runtime = [
+  "templates/*",
+  "templates/prompt_engineering/*/*",
+]

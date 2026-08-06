@@ -1,10 +1,10 @@
 # Update Modules
 
-Extend `adws/adw_modules/` with new low-level logic.
+Extend deterministic Flowie logic.
 
 ## The rule
 
-**ALL low-level logic lives in `adw_modules/`; ADW scripts stay thin.** An `adw_*.py` file declares agents, sequences phases, and returns an exit code. Anything else — subprocess handling, parsing, retry mechanics, git plumbing, reusable predicates — goes in a module.
+**ADW scripts stay thin.** Package-level reusable logic lives in `flowie_runtime/`. Project-specific deterministic commands live in `.flowie/quality.py`. An ADW file declares agents, sequences phases, and returns an exit code.
 
 ## Where things go
 
@@ -67,7 +67,7 @@ If the type and the Report example drift, the agent produces what the prompt ask
 A gate is a callable — `gate(envelope, run) -> GateReport`. You record **one check per item you look at**, and the harness derives the verdict: any failed check is a violation, and no failed checks means pass.
 
 ```python
-from adw_modules.data_types import GateReport
+from flowie_runtime.data_types import GateReport
 
 def tests_declared_passed(envelope, run) -> GateReport:
     """Verify the envelope's own test claims, after the fact."""
@@ -98,4 +98,4 @@ Reusable gates live in `gates.py`; genuine one-offs can be defined inline at the
 
 ## Before you finish
 
-Run the smoke ADW — `uv run adws/adw_prompt.py "ping"` — since every module change rides the same path a real run does.
+Run the smoke ADW — `flowie run prompt "ping"` — since every module change rides the same path a real run does.

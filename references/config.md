@@ -2,7 +2,7 @@
 
 The full `flowie.config.yaml` spec: every field, how defaults merge, and how model / tools / write boundaries map onto the selected coding agent.
 
-It lives at `adws/flowie_config/flowie.config.yaml`. Every `adw_*.py` and the justfile use that path by default; pass `--config <path>` to run a different roster.
+It lives at `.flowie/flowie.config.yaml`. Every `adw_*.py` and the justfile use that path by default; pass `--config <path>` to run a different roster.
 
 ## Shape
 
@@ -13,19 +13,19 @@ defaults:
   thinking: medium
   harness_engineering: []
   tools: [read, bash, edit, write, grep, find, ls]
-  protected_files: [adws/adw_modules/, adws/flowie_config/, "adws/adw_*.py"]
-  data_dir: adws/adw_data
+  protected_files: [.flowie/flowie.config.yaml, .flowie/adws/, .flowie/quality.py]
+  data_dir: .flowie/data
 
 observability:
-  db: adws/adw_data/flowie.db
+  db: .flowie/data/flowie.db
   poll_ms: 500
 
 agents:
   - name: planner
     purpose: Turn a request into a plan the builder can implement without asking questions.
     prompt_engineering:
-      system: adws/adw_data/prompt_engineering/planner/system.md
-      user: adws/adw_data/prompt_engineering/planner/user.md
+      system: .flowie/prompts/planner/system.md
+      user: .flowie/prompts/planner/user.md
     writes: [specs/]
 ```
 
@@ -62,7 +62,7 @@ Corrections use `codex exec resume <session_id>` when Codex exposes a resumable 
 
 `--output-schema` is generated from the Pydantic envelope type declared at the ADW call site. Keep the synced triad together whenever an output changes:
 
-1. The `EnvelopeBase` subclass in `adw_modules/data_types.py`.
+1. The `EnvelopeBase` subclass in `flowie_runtime/data_types.py`.
 2. The `## Report` JSON example in the relevant `user.md`.
 3. Every call site passing `output_type=`.
 

@@ -61,7 +61,7 @@ Same idea, same scope. What changed is that "popularity" became a sort order, th
 **If they did not, read what this repo actually has and choose from that.**
 
 ```bash
-ls adws/adw_*.py                       # the menu
+ls .flowie/adws/*.py                       # the menu
 head -20 adws/adw_<name>.py            # every ADW opens with its `Phases:` line — the chain in one line
 ```
 

@@ -6,7 +6,7 @@ Compose a new ADW script — a thin, deterministic Python workflow over agents a
 
 Answer four questions, in order:
 
-1. **What agents, in what order?** Pick from the roster (`adws/flowie_config/flowie.config.yaml`). The starter six cover most chains:
+1. **What agents, in what order?** Pick from the roster (`.flowie/flowie.config.yaml`). The starter six cover most chains:
 
 | Agent | Use when | Output type | Typical gates |
 |---|---|---|---|
@@ -42,14 +42,14 @@ Answer four questions, in order:
 ## Step 3 — Generate or write it
 
 ```bash
-uv run .codex/skills/flowie/scripts/make_adw.py --name review_docs --agents scout,builder
+flowie make-adw --name review_docs --agents scout,builder
 ```
 
-Writes `adws/adw_review_docs.py`: one agent phase per name, chained by `previous=`, starter agents mapped to their output types, unknown agents to `GenericOutput`. It does NOT create config entries or prompt files — do that first (`update_config.md`), or `agents.validate()` will stop the run and tell you what's missing.
+Writes `.flowie/adws/review_docs.py`: one agent phase per name, chained by `previous=`, starter agents mapped to their output types, unknown agents to `GenericOutput`. It does NOT create config entries or prompt files — do that first (`update_config.md`), or `agents.validate()` will stop the run and tell you what's missing.
 
 ## The canonical skeleton
 
-Every `adw_*.py`, generated or hand-written, is a `uv` single-file script with this shape:
+Every custom `.flowie/adws/*.py`, generated or hand-written, has this shape:
 
 ```python
 #!/usr/bin/env -S uv run
@@ -61,13 +61,13 @@ Every `adw_*.py`, generated or hand-written, is a `uv` single-file script with t
 import argparse
 import sys
 
-from adw_modules import agents, gates, git_helper, session, utils
-from adw_modules.data_types import AgentCall, BuildOutput, PhaseParams, PlanOutput
+from flowie_runtime import agents, gates, git_helper, session, utils
+from flowie_runtime.data_types import AgentCall, BuildOutput, PhaseParams, PlanOutput
 
 REQUIRED_AGENTS = ["planner", "builder"]        # names, never models
 
 
-def main(prompt: str, config: str = "adws/flowie_config/flowie.config.yaml", adw_id: str | None = None) -> int:
+def main(prompt: str, config: str = ".flowie/flowie.config.yaml", adw_id: str | None = None) -> int:
     cfg = agents.load_config(config)            # 1. point to config
     agents.validate(cfg, REQUIRED_AGENTS)       # 2. fail fast — nothing spawns on a half-valid config
     run = session.ensure(cfg, adw_id)           # 3. pin-or-create the session → the Run object
@@ -97,7 +97,7 @@ def main(prompt: str, config: str = "adws/flowie_config/flowie.config.yaml", adw
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("prompt", help="inline text or a path to a prompt file")
-    parser.add_argument("--config", default="adws/flowie_config/flowie.config.yaml")
+    parser.add_argument("--config", default=".flowie/flowie.config.yaml")
     parser.add_argument("--adw-id", default=None, help="join or pin an existing session")
     args = parser.parse_args()
     sys.exit(main(utils.resolve_prompt(args.prompt), args.config, args.adw_id))
@@ -110,11 +110,11 @@ if __name__ == "__main__":
 - **`previous=` carries the chain** — the upstream envelope lands in the next agent's `user.md` as `{{previous_envelope}}`; bulky context moves through `context_handoff/` files the envelope references.
 - **The engineer request phase comes first**, always.
 - **Four-param rule** — `run.phase()` and `ph.call()` each take exactly one object; new helpers with >4 params get a data type.
-- **Stay thin** — sequencing and acceptance only; real logic goes in `adw_modules/` (`update_modules.md`).
+- **Stay thin** — sequencing and acceptance only; reusable package logic goes in `flowie_runtime/`; project commands go in `.flowie/quality.py`.
 - **Committing is a code phase, and it needs a fallback.** `PlanOutput`, `BuildOutput`, and `DocumentOutput` each carry a `commit_message` the agent writes **for its own work product** — the spec, the code, the write-up. It defaults to empty, so always `envelope.commit_message or <fallback>`, and commit each product with the message of the agent that made it (`adw_simple_sdlc.py` commits three times and never crosses them). `git_helper.commit_all(message)` stages everything, commits, and returns the short sha; it raises a clear error when the cwd isn't a git repo or nothing changed, and that raise fails the phase.
 
 ## Before you ship it
 
-1. `uv run adws/adw_<name>.py "a tiny real request"` — watch it go green end to end.
-2. Check the trace: `sqlite3 adws/adw_data/flowie.db "select seq,name,kind,owner,status from phases where adw_id='<id>' order by seq;"`
+1. `flowie run <name> "a tiny real request"` — watch it go green end to end.
+2. Check the trace: `sqlite3 .flowie/data/flowie.db "select seq,name,kind,owner,status from phases where adw_id='<id>' order by seq;"`
 3. Read the final `envelope.json` — is the output type earning its fields, or should it be sharper?

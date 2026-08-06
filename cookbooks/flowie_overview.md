@@ -1,88 +1,67 @@
 # Flowie Overview
 
-The system map the orchestrator reads on startup — what Flowie is, how a stamped repo is laid out, and which cookbook to load next.
+The system map the orchestrator reads on startup — what Flowie is, how a target
+repo is laid out, and which cookbook to load next.
 
-## What Flowie is
+## What Flowie Is
 
-Flowie builds repeatable **agents plus code** workflows. Deterministic Python (an ADW script) owns sequencing, retries, and acceptance; agents are bounded nodes inside that graph. Agent proposes, code disposes.
+Flowie builds repeatable **agents plus code** workflows. Deterministic Python
+owns sequencing, retries, acceptance, permissions, and observability; agents are
+bounded nodes inside that graph. Agent proposes, code disposes.
 
-Your job as orchestrator: **run the system, observe the system, help the engineer interact with it.** You do not do the work an ADW exists to do.
+The package owns `flowie_runtime/` and builtin ADWs. A target repo owns only its
+`.flowie/` overlay.
 
-## Layout of a stamped repo
+## Target Repo Layout
 
-```
-adws/
-├── flowie_config/
-│   └── flowie.config.yaml         the agent roster — one agent, one prompt, one purpose
-├── adw_prompt.py                smallest ADW: one agent, one prompt, traced end-to-end
-├── adw_plan.py, adw_scout.py, adw_build.py, adw_plan_build.py, adw_build_test.py, adw_plan_build_test.py
-├── adw_build_review.py          build → review: is this what was asked for? (not testing)
-├── adw_document.py              write up the work just done, from git diff vs main
-├── adw_simple_sdlc.py           plan → build → test → review → document; commits each product
-├── adw_modules/                 ALL low-level logic — ADW scripts stay thin
-│   ├── data_types.py            AgentCall, PhaseParams, Phase, Envelope + one output type per agent call
-│   ├── agents.py                load_config, validate, resolve entry → interface + model + thinking
-│   ├── runner.py                the Run object: run.phase(PhaseParams) → ph.call(AgentCall)
-│   ├── agent_codex.py           Codex CLI interface · agent_pi.py legacy upstream Pi interface
-│   ├── gates.py                 gate(envelope, run) -> GateReport — one check per item verified
-│   ├── changes.py               git diff vs a resolved base → ChangeSet → envelope for the documenter
-│   ├── prompts.py, session.py, tracer.py, console.py, git_helper.py, utils.py
-└── adw_data/
-    ├── prompt_engineering/{agent}/{system.md,user.md}   tracked — edit prompts HERE, never in the skill
-    │                                planner · builder · scout · reviewer · documenter
-    ├── sessions/{adw_id}/                               gitignored runtime
-    │   ├── agent_map.json       agent → coding-agent session_id + model
-    │   ├── context_handoff/     the one place agents write files for the agents that follow
-    │   └── {agent}/{prompts/, raw_output.jsonl, envelope.json}
-    └── flowie.db                  gitignored SQLite trace db the visualizer polls
+```text
+.flowie/
+├── flowie.config.yaml       agent roster, models, prompts, write boundaries
+├── prompts/{agent}/         tracked project prompt pairs
+├── quality.py               project test/lint/typecheck/build commands
+├── adws/                    custom or ejected ADWs only
+└── data/                    gitignored runtime
+    ├── flowie.db
+    └── sessions/{adw_id}/
 ```
 
-This port runs Codex by default: `coding_agent: codex`, default model `gpt-5.5`. Legacy Pi support remains in the stamped modules for upstream compatibility, but new rosters should start with Codex.
-
-## The phase model
-
-Every ADW run is a sequence of **phases**, each one `with run.phase(PhaseParams(...))`. Three kinds, three swim lanes:
-
-- **engineer** — the human lane; today the system-input phase (who asked, and for what).
-- **agent** — `ph.call(AgentCall(...))`: prompt in → typed envelope out → gates verified.
-- **code** — deterministic steps that stand alone (git branch, git commit, migrate). Never buried inside an agent phase.
-
-**Success must be earned — every phase defaults to `fail`.** A clean exit flips it to success; agent phases additionally require the envelope to parse and all gates to come back green. A raise keeps it failed, records an error event, and aborts the run. `retries=N` on an agent phase buys extra gate-correction rounds through the same session before that raise happens.
-
-## Envelopes
-
-Agents have exactly two output channels: reference files written into `context_handoff/`, and a **final valid-JSON response** parsed against the output type the call declared. Code persists it as `envelope.json` and injects it into the next agent's `user.md` via `{{previous_envelope}}`. Bad JSON is never a restart — the harness re-prompts the *same session, context intact*, until it parses (bounded). See `references/handoff.md`.
-
-**The output contract is a synced triad**: the type in `data_types.py` ↔ the `## Report` JSON example in the agent's `user.md` ↔ `output_type=` at the call site. Editing any one of the three means editing all three in the same change — drift between them taxes every call with correction retries.
-
-## Running an ADW
+Builtin chains run by name:
 
 ```bash
-uv run adws/adw_plan.py "add a /health endpoint"
-uv run adws/adw_plan_build.py requests/health.md --adw-id a1b2c3d4
+flowie run scout "where is auth handled?"
+flowie run plan-build "add a /health endpoint"
+flowie run simple-sdlc "add it, test it, review it, document it"
 ```
 
-The prompt is inline text or a file path. `--adw-id` is optional on every ADW: given one, the run joins that session (same dirs, same `context_handoff/`, agents resume their existing context windows); omitted, a fresh id is minted and printed.
+Project-specific chains live in `.flowie/adws/` and also run by name:
 
-## When you have finished reading this
+```bash
+flowie make-adw --name review_docs --agents scout,builder
+flowie run review_docs "review docs"
+```
 
-You are done with startup. List the ADWs (`ls adws/adw_*.py`, plus each `Phases:` docstring line) as a table, and **wait for the engineer's request.**
+## The Phase Model
 
-Do not survey anything else — not the trace db, not the config, not past runs, not the repo tree. You do not yet know what the request is, so anything you gather now is a guess about what will matter, spent from the context the real work needs. Every cookbook and reference below is lazy-loaded, one per request, and that is the whole design.
+Every ADW run is a sequence of phases, each one `with run.phase(PhaseParams(...))`:
 
-## Where to go next
+- **engineer** — records the incoming ask.
+- **agent** — `ph.call(AgentCall(...))`: prompt in, typed envelope out, gates verified.
+- **code** — deterministic work such as tests, quality commands, git commit, diff capture.
 
-Load one cookbook per request — this overview is the only one you read up front.
+Success must be earned: every phase defaults to `fail`; clean exit flips it to
+success. Agent phases additionally require parsed envelopes and green gates.
+
+## Where To Go Next
+
+Load one cookbook per request.
 
 | Request | Cookbook |
 |---|---|
-| Turn a request into the prompt an ADW gets | `how_to_prompt_for_the_eng.md` — **read before every launch** |
+| Turn a request into the prompt an ADW gets | `how_to_prompt_for_the_eng.md` |
 | Set the system up in a repo | `install.md` |
-| Write a new ADW script | `create_adw.md` |
-| Change an existing ADW chain | `update_adw.md` |
-| Generate `flowie.config.yaml` | `create_config.md` |
+| Write a custom ADW | `create_adw.md` |
+| Change an existing custom ADW | `update_adw.md` |
+| Create or replace the config | `create_config.md` |
 | Add or retune an agent | `update_config.md` |
-| Add low-level logic or a gate | `update_modules.md` |
+| Edit deterministic project checks | `update_modules.md` |
 | Run and monitor a workflow | `how_to_prompt_for_the_eng.md`, then `run_adw.md` |
-
-References, loaded when you need the spec: `references/config.md` (full config schema), `references/handoff.md` (envelope + session layout), `references/observability.md` (events, db tables, polling).

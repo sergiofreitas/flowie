@@ -1,6 +1,9 @@
 # Python
 __pycache__/
 *.pyc
+build/
+dist/
+*.egg-info/
 
 # Local env/secrets
 .env
