@@ -14,6 +14,8 @@ Existing files are skipped unless --force.
 """
 
 import argparse
+import ast
+import sqlite3
 import shutil
 import sys
 from pathlib import Path
@@ -31,6 +33,44 @@ GITIGNORE_ENTRIES = [
     "__pycache__/",
     "*.pyc",
 ]
+
+
+def tracer_schema() -> tuple[str, list[tuple[str, str, str]]]:
+    """Read the shipped tracer schema without importing target dependencies."""
+    tracer = TEMPLATES / "adws" / "adw_modules" / "tracer.py"
+    module = ast.parse(tracer.read_text(), filename=str(tracer))
+    schema = None
+    migrations = []
+    for node in module.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+        if "SCHEMA" in names:
+            schema = ast.literal_eval(node.value)
+        if "MIGRATIONS" in names:
+            migrations = ast.literal_eval(node.value)
+    if schema is None:
+        raise RuntimeError(f"SCHEMA not found in {tracer}")
+    return schema, migrations
+
+
+def ensure_db(root: Path, stamped: list) -> None:
+    db_path = root / "adws" / "adw_data" / "flowie.db"
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    schema, migrations = tracer_schema()
+    conn = sqlite3.connect(db_path, isolation_level=None)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        conn.execute("PRAGMA busy_timeout=5000;")
+        conn.executescript(schema)
+        for table, column, decl in migrations:
+            columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+            if column not in columns:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+    finally:
+        conn.close()
+    stamped.append(f"{db_path} (initialized/migrated)")
 
 
 def stamp(src: Path, dest: Path, force: bool, stamped: list, skipped: list) -> None:
@@ -79,10 +119,11 @@ def main() -> int:
     # plus the run banner tell you to use them, so a stamped repo has to have
     # them. Skipped like any other file if the repo already has a justfile.
     stamp(TEMPLATES / "justfile", root / "justfile", args.force, stamped, skipped)
+    ensure_db(root, stamped)
     ensure_gitignore(root, stamped)
 
     print(f"flowie installed into {root}")
-    print(f"  stamped: {len(stamped)} file(s)")
+    print(f"  stamped/ensured: {len(stamped)} file(s)")
     for s in stamped:
         print(f"    + {s}")
     if skipped:

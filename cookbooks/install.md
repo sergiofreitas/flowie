@@ -23,7 +23,8 @@ Run from the **target repo root** — the cwd is where everything lands. If the 
 | `adws/adw_data/prompt_engineering/{planner,builder,scout,reviewer,documenter}/` | `templates/prompt_engineering/` | yes — **the user-owned home for prompts** |
 | `adws/adw_data/harness_engineering/` | `templates/harness_engineering/` | yes — legacy Pi extension examples; ignored by Codex mode |
 | `justfile` | `templates/justfile` | yes — starter recipes: `just demo`, the workflows, the trace reads, `just obs` |
-| `adws/adw_data/sessions/`, `adws/adw_data/flowie.db` | created at runtime | no — gitignored |
+| `adws/adw_data/flowie.db` | initialized/migrated by `install.py` | no — gitignored |
+| `adws/adw_data/sessions/` | created at runtime | no — gitignored |
 
 `prompt_engineering` is what an agent is told. `harness_engineering` remains in the tree for upstream compatibility, but `coding_agent: codex` does not load Pi extensions.
 

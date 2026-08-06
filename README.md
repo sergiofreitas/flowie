@@ -73,12 +73,14 @@ adws/
 ├── adw_*.py
 ├── adw_modules/
 └── adw_data/
+    ├── flowie.db
     └── prompt_engineering/
 justfile
 .env.sample
 ```
 
-Runtime files are created later and should stay uncommitted:
+The installer initializes the SQLite trace db so the read recipes and visualizer
+have a schema immediately. Runtime files should stay uncommitted:
 
 ```text
 adws/adw_data/sessions/
