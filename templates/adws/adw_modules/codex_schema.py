@@ -21,6 +21,10 @@ def _forbid_extra_object_keys(value: Any) -> None:
     if isinstance(value, dict):
         if value.get("type") == "object" or "properties" in value:
             value.setdefault("additionalProperties", False)
+            properties = value.get("properties")
+            if isinstance(properties, dict):
+                value["required"] = list(properties)
+        value.pop("default", None)
         for child in value.values():
             _forbid_extra_object_keys(child)
     elif isinstance(value, list):

@@ -175,11 +175,11 @@ class MakeAdwSmokeTest(unittest.TestCase):
 
 
 class CodexSchemaSmokeTest(unittest.TestCase):
-    def test_codex_output_schema_forbids_extra_object_keys(self) -> None:
+    def test_codex_output_schema_is_strict_for_objects(self) -> None:
         schema = prepare_output_schema({
             "type": "object",
             "properties": {
-                "status": {"type": "string"},
+                "status": {"type": "string", "default": "success"},
                 "findings": {
                     "type": "array",
                     "items": {
@@ -204,6 +204,8 @@ class CodexSchemaSmokeTest(unittest.TestCase):
         self.assertTrue(objects)
         for obj in objects:
             self.assertIs(obj.get("additionalProperties"), False)
+            self.assertEqual(set(obj["required"]), set(obj["properties"]))
+        self.assertNotIn("default", schema["properties"]["status"])
 
     def test_generic_output_schema_root_is_codex_strict(self) -> None:
         schema = prepare_output_schema({
