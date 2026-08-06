@@ -1,0 +1,103 @@
+name: Publish Python Package
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Run smoke tests
+        run: python -m unittest tests.smoke
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set publish version
+        id: version
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          path = Path("pyproject.toml")
+          text = path.read_text()
+          match = re.search(r'^version = "([^"]+)"', text, re.MULTILINE)
+          if not match:
+              raise SystemExit("project.version not found in pyproject.toml")
+
+          version = f"{match.group(1)}.post{os.environ['GITHUB_RUN_NUMBER']}"
+          text = re.sub(r'^version = "[^"]+"',
+                        f'version = "{version}"',
+                        text,
+                        count=1,
+                        flags=re.MULTILINE)
+          path.write_text(text)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"version={version}\n")
+          PY
+
+      - name: Build distributions
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowie-${{ steps.version.outputs.version }}-dist
+          path: dist/
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+
+    environment:
+      name: pypi
+      url: https://pypi.org/project/flowie/
+
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v5
+        with:
+          pattern: flowie-*-dist
+          path: dist/
+          merge-multiple: true
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
