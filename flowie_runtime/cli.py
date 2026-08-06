@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import importlib
 import runpy
 import shutil
 import sqlite3
@@ -136,13 +135,10 @@ def init(args: argparse.Namespace) -> int:
 
 def _run_builtin(name: str, argv: list[str]) -> int:
     module_name = BUILTINS[name]
-    module = importlib.import_module(f"flowie_runtime.builtins.{module_name}")
     sys.argv = [f"flowie run {name}", *argv]
-    if hasattr(module, "main"):
-        # Let the builtin parse its own CLI exactly like the original script.
-        runpy.run_module(f"flowie_runtime.builtins.{module_name}", run_name="__main__")
-        return 0
-    raise SystemExit(f"builtin ADW {name!r} has no main()")
+    # Let the builtin parse its own CLI exactly like the original script.
+    runpy.run_module(f"flowie_runtime.builtins.{module_name}", run_name="__main__")
+    return 0
 
 
 def run(args: argparse.Namespace) -> int:

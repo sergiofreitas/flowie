@@ -108,7 +108,10 @@ def execute(run, phase: Phase, call: AgentCall) -> EnvelopeBase:
     run.console.agent_started(agent.name, agent.model, session_id)
 
     schema_path = agent_dir / f"{call.output_type.__name__}.schema.json"
-    schema_path.write_text(json.dumps(call.output_type.model_json_schema(), indent=2))
+    schema = call.output_type.model_json_schema()
+    if agent.coding_agent == "codex":
+        schema = agent_codex.prepare_output_schema(schema)
+    schema_path.write_text(json.dumps(schema, indent=2))
 
     # Parse retries and gate corrections re-enter the SAME agent session when
     # the selected CLI exposes a resumable id, so the

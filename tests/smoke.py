@@ -15,6 +15,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from flowie_runtime.codex_schema import prepare_output_schema
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -170,6 +172,48 @@ class MakeAdwSmokeTest(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
             self.assertTrue((target / ".flowie" / "adws" / "review_docs.py").is_file())
+
+
+class CodexSchemaSmokeTest(unittest.TestCase):
+    def test_codex_output_schema_forbids_extra_object_keys(self) -> None:
+        schema = prepare_output_schema({
+            "type": "object",
+            "properties": {
+                "status": {"type": "string"},
+                "findings": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"file": {"type": "string"}, "note": {"type": "string"}},
+                    },
+                },
+            },
+        })
+
+        def object_schemas(value):
+            if isinstance(value, dict):
+                if value.get("type") == "object" or "properties" in value:
+                    yield value
+                for child in value.values():
+                    yield from object_schemas(child)
+            elif isinstance(value, list):
+                for child in value:
+                    yield from object_schemas(child)
+
+        objects = list(object_schemas(schema))
+        self.assertTrue(objects)
+        for obj in objects:
+            self.assertIs(obj.get("additionalProperties"), False)
+
+    def test_generic_output_schema_root_is_codex_strict(self) -> None:
+        schema = prepare_output_schema({
+            "properties": {
+                "status": {"type": "string"},
+                "summary": {"type": "string"},
+            },
+        })
+
+        self.assertIs(schema.get("additionalProperties"), False)
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from .data_types import CodexRequest, CodexResult
+from .codex_schema import prepare_output_schema
 
 CODEX_PATH = os.environ.get("CODEX_PATH", "codex")
 UUID_RE = re.compile(
@@ -115,8 +116,39 @@ def run(
     if last.exists():
         result.text = last.read_text()
     if result.returncode != 0 and not result.text:
-        raise RuntimeError(f"codex exec exited {result.returncode}: {stderr.strip()[-1200:]}")
+        detail = _failure_detail(stderr, raw_path)
+        raise RuntimeError(f"codex exec exited {result.returncode}: {detail}")
     return result
+
+
+def _failure_detail(stderr: str, raw_path: Path) -> str:
+    parts = []
+    if stderr.strip():
+        parts.append(stderr.strip())
+    raw_tail = _raw_error_tail(raw_path)
+    if raw_tail:
+        parts.append(raw_tail)
+    if not parts:
+        parts.append(f"no stderr; raw output: {raw_path}")
+    return "\n".join(parts)[-2000:]
+
+
+def _raw_error_tail(raw_path: Path) -> str:
+    if not raw_path.exists():
+        return ""
+    lines = raw_path.read_text(errors="replace").splitlines()[-50:]
+    messages = []
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            messages.append(line)
+            continue
+        if event.get("type") == "error":
+            messages.append(str(event.get("message") or event))
+        elif event.get("type") == "turn.failed":
+            messages.append(json.dumps(event.get("error") or event))
+    return "\n".join(messages).strip()
 
 
 def _fold_usage(result: CodexResult, event: dict[str, Any]) -> None:
