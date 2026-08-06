@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Local env/secrets
+.env
+
+# Visualizer dependencies/build output
+node_modules/
+apps/visualizer/node_modules/
+apps/visualizer/dist/
+
+# Flowie runtime when testing stamped repos locally
+adws/adw_data/sessions/
+adws/adw_data/flowie.db*

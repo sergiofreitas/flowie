@@ -1,0 +1,7 @@
+interface:
+  display_name: "Flowie"
+  short_description: "Run observable agents-plus-code workflows"
+  default_prompt: "Use $flowie to install and run an observable ADW workflow in this repo."
+
+policy:
+  allow_implicit_invocation: true
