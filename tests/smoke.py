@@ -109,6 +109,35 @@ class InstallSmokeTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
             self.assertTrue((target / ".flowie" / "flowie.config.yaml").is_file())
             self.assertTrue((target / ".flowie" / "data" / "flowie.db").is_file())
+            self.assertFalse((target / "justfile").exists())
+
+    def test_cli_init_can_stamp_optional_justfile(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="flowie-cli-") as tmp:
+            target = Path(tmp)
+            result = run_flowie("init", "--with-justfile", cwd=target)
+
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+            self.assertTrue((target / "justfile").is_file())
+
+    def test_cli_observability_commands_read_initialized_db(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="flowie-cli-") as tmp:
+            target = Path(tmp)
+            init_result = run_flowie("init", cwd=target)
+            sessions_result = run_flowie("sessions", cwd=target)
+            obs_result = run_flowie("obs", cwd=target)
+            rosters_result = run_flowie("rosters", cwd=target)
+
+            self.assertEqual(init_result.returncode, 0, init_result.stderr + init_result.stdout)
+            self.assertEqual(sessions_result.returncode, 0,
+                             sessions_result.stderr + sessions_result.stdout)
+            self.assertIn("no Flowie sessions yet", sessions_result.stdout)
+            self.assertEqual(obs_result.returncode, 0, obs_result.stderr + obs_result.stdout)
+            self.assertIn("Flowie observability", obs_result.stdout)
+            self.assertIn("flowie phases <adw_id>", obs_result.stdout)
+            self.assertEqual(rosters_result.returncode, 0,
+                             rosters_result.stderr + rosters_result.stdout)
+            self.assertIn(".flowie/flowie.config.yaml", rosters_result.stdout)
+            self.assertIn("scout", rosters_result.stdout)
 
 
 class MakeAdwSmokeTest(unittest.TestCase):

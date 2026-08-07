@@ -14,7 +14,7 @@ demo:
     flowie run prompt --agent scout "reply with a one-line summary of this repo"
     @echo "\n2/2  scout: read-only recon"
     flowie run scout "list the top-level directories in this repo and what each is for. change nothing."
-    @echo "\nboth done. now run:  just sessions"
+    @echo "\nboth done. now run:  flowie sessions"
 
 prompt *ARGS:
     flowie run prompt "$@"
@@ -38,16 +38,19 @@ quality *ARGS:
     flowie run quality "$@"
 
 sessions:
-    @sqlite3 {{db}} "select adw_id, status, substr(request,1,50), total_tokens, round(total_cost,4) from sessions order by started_at desc limit 10;"
+    flowie sessions
 
 phases ADW_ID:
-    @sqlite3 {{db}} "select seq, name, kind, owner, status, attempt from phases where adw_id='{{ADW_ID}}' order by seq;"
+    flowie phases {{ADW_ID}}
 
 tail ADW_ID:
-    @sqlite3 {{db}} "select rowid, type, name, started_at from events where adw_id='{{ADW_ID}}' order by rowid desc limit 25;"
+    flowie tail {{ADW_ID}}
 
 procs ADW_ID:
-    @sqlite3 {{db}} "select kind, name, pid, command, started_at from processes where adw_id='{{ADW_ID}}' and ended_at is null order by id;"
+    flowie procs {{ADW_ID}}
+
+rosters:
+    flowie rosters
 
 obs:
     flowie obs

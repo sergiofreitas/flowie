@@ -8,7 +8,7 @@ Generate `flowie.config.yaml` — the agent roster for a target repo.
 uv run .codex/skills/flowie/scripts/make_config.py
 ```
 
-Writes `.flowie/flowie.config.yaml` — creating the directory if needed — with the starter agents (planner, builder, scout, reviewer, documenter) wired to the prompt files `flowie init` stamped into `.flowie/prompts/`. That path is the default every ADW and the justfile look for; `--config` overrides it. `make_config.py` refuses to overwrite an existing config unless you pass `--force`, so retuning an existing roster is a hand edit — see `update_config.md`.
+Writes `.flowie/flowie.config.yaml` — creating the directory if needed — with the starter agents (planner, builder, scout, reviewer, documenter) wired to the prompt files `flowie init` stamped into `.flowie/prompts/`. That path is the default every ADW uses; `--config` overrides it. `make_config.py` refuses to overwrite an existing config unless you pass `--force`, so retuning an existing roster is a hand edit — see `update_config.md`.
 
 ## The rule
 

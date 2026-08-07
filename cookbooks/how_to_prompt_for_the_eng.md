@@ -105,6 +105,6 @@ After launching, show the engineer three things so a bad translation dies in sec
 1. **The prompt you actually sent** — verbatim.
 2. **The ADW you chose**, and the one-line reason — or that you used the one they named.
    If they named a roster (a config, a model tier), say which one you ran on; if they did not, you ran the default, and switching that is their call, not yours (`run_adw.md`).
-3. **The `adw_id`**, so they can watch it (`just phases <adw_id>`).
+3. **The `adw_id`**, so they can watch it (`flowie phases <adw_id>`).
 
 Then observe and report per `run_adw.md`. You run the system; you do not do the work inside it.

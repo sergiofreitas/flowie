@@ -127,7 +127,7 @@ agent_sessions (                   -- the queryable mirror of agent_map.json
 );
 ```
 
-**A hung agent emits nothing**, which is exactly when you need its pid: no events, no tokens, no output to read. `processes` is the only table that can answer "what is this run running, and how do I stop it" — `just procs <adw_id>` lists what is live, `just kill <adw_id>` stops children before the parent, and both verify the recorded `command` still matches the pid before signalling it. A killed run finalizes its own trace: SIGTERM and SIGINT are turned into `SystemExit` in `session.ensure`, so the session lands on `fail` with its process rows closed instead of reading `running` forever.
+**A hung agent emits nothing**, which is exactly when you need its pid: no events, no tokens, no output to read. `processes` is the table that answers "what is this run running?" — `flowie procs <adw_id>` lists what is live and records the original `command` so an operator can verify the pid before signalling it. A killed run finalizes its own trace: SIGTERM and SIGINT are turned into `SystemExit` in `session.ensure`, so the session lands on `fail` with its process rows closed instead of reading `running` forever.
 
 **Derived, never stored:** phase durations (`ended_at − started_at`), session phase-progress (query `phases` by `adw_id`), lane layout (`kind` + `owner`).
 

@@ -28,7 +28,7 @@ The prompt is inline text or a file path. Launch in the background so you can po
 The chain says *what runs*; the config says *who runs it*. **If the engineer references a roster, a config, or a model tier, pass it — do not fall through to the default.**
 
 ```bash
-just rosters                            # every roster on disk, and the model each agent runs
+flowie rosters                          # every roster on disk, and the model each agent runs
 ```
 
 That prints the path to pass and who is in it, in one read:
@@ -52,7 +52,7 @@ They will rarely say `--config`. Treat any of these as naming a roster, then res
 | "have opus plan this one" | a roster whose planner is that model; if none exists, say so rather than editing the config mid-request |
 | nothing about models at all | the default, `.flowie/flowie.config.yaml` |
 
-`--config` takes the path directly; the justfile recipes read `FLOWIE_CONFIG` instead:
+`--config` takes the path directly; optional justfile recipes read `FLOWIE_CONFIG` instead:
 
 ```bash
 flowie run <chain> "<prompt>" --config .flowie/flowie.frontier.config.yaml
@@ -106,12 +106,11 @@ Files are the raw record if you need more than the db shows: `.flowie/data/sessi
 A hung coding agent produces no events at all, so the trace goes quiet rather than red. Read it in this order:
 
 ```bash
-just phases <adw_id>     # which phase is still `running`
-just procs <adw_id>      # what that phase is actually running, with pids
-just kill <adw_id>       # stop it — children first, then the workflow
+flowie phases <adw_id>   # which phase is still `running`
+flowie procs <adw_id>    # what that phase is actually running, with pids
 ```
 
-`processes` rows with `ended_at IS NULL` are the live ones. If `procs` shows a Codex child but the phase has produced no `tool_call` events and its `raw_output.jsonl` is empty, the agent never got started properly — check that `codex exec` can run non-interactively and that nothing is blocking the subprocess, rather than waiting it out. `just kill` verifies each pid still matches the command that was recorded before signalling, because pids get recycled.
+`processes` rows with `ended_at IS NULL` are the live ones. If `procs` shows a Codex child but the phase has produced no `tool_call` events and its `raw_output.jsonl` is empty, the agent never got started properly — check that `codex exec` can run non-interactively and that nothing is blocking the subprocess, rather than waiting it out.
 
 A killed run marks itself `fail` and closes its process rows, so the trace never claims work is in flight that is already dead.
 
@@ -119,4 +118,4 @@ A killed run marks itself `fail` and closes its process rows, so the trace never
 
 Tell the engineer, in order: which chain and which roster you launched (name the config whenever it was not the default), which phase is running now (or which failed), phase statuses in sequence, and for a failure the gate violations or the error verbatim. Remember **every phase defaults to `fail`** — a phase showing `fail` may simply never have completed; `queued` means it never started. Don't dress up a partial run as a success.
 
-For a visual live view, the visualizer app in the skill (`just obs`) polls this same db — sessions as cards, runs as swim lanes, phases and tool calls drill-in. The justfile looks for the skill at `~/.codex/skills/flowie` by default; set `FLOWIE_SKILL_DIR=/path/to/flowie` if you are running a repo-local checkout. The sqlite queries above remain the headless equivalent.
+For the packaged CLI view, `flowie obs` summarizes this same db and points to `flowie phases`, `flowie tail`, and `flowie procs`. The Bun/Vite visualizer remains available from a source checkout when a browser UI is needed.

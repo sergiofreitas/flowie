@@ -1,6 +1,6 @@
 # Flowie
 
-Flowie is a Codex skill for running repeatable **agents plus code** workflows.
+Flowie is a Python executable and Codex skill for running repeatable **agents plus code** workflows.
 It ports the Super Simple Software Factory pattern to Codex: deterministic Python
 workflow scripts own sequencing, retries, validation, and observability, while
 Codex agents do bounded planning, building, reviewing, scouting, and documenting
@@ -16,8 +16,8 @@ streams events into SQLite for terminal queries or the web visualizer.
 - A Codex skill named `flowie`.
 - Builtin ADWs for scout, plan, build, test, review, document, and composed SDLC flows.
 - A project-local `.flowie/` overlay for config, prompts, custom ADWs, quality commands, and runtime data.
-- SQLite observability in `.flowie/data/flowie.db`.
-- A Bun/Vite visualizer for inspecting sessions, phases, events, gates, prompts, and envelopes.
+- SQLite observability in `.flowie/data/flowie.db`, with CLI commands for sessions, phases, events, and running processes.
+- An optional Bun/Vite visualizer for inspecting sessions, phases, events, gates, prompts, and envelopes from a source checkout.
 
 ## Requirements
 
@@ -28,16 +28,10 @@ codex --version
 uv --version
 ```
 
-Recommended for daily operation:
+Optional for local shortcuts and the web visualizer:
 
 ```bash
 just --version
-sqlite3 --version
-```
-
-For the web visualizer:
-
-```bash
 bun --version
 ```
 
@@ -75,8 +69,13 @@ This creates only the project-owned overlay:
 ├── adws/
 └── data/
     └── flowie.db
-justfile
 .env.sample
+```
+
+If you want project-local `just` shortcuts, opt in explicitly:
+
+```bash
+flowie init --with-justfile
 ```
 
 The runtime and builtin ADWs stay in the Flowie package. Runtime data should
@@ -94,46 +93,45 @@ The installer appends these to `.gitignore`.
 In the target repo:
 
 ```bash
-just demo
+flowie demo
 ```
 
-Without `just`, run the smallest ADW directly:
+Or run the smallest ADW directly:
 
 ```bash
-uv run ~/.codex/skills/flowie/scripts/flowie.py run prompt --agent scout "reply with a one-line summary of this repo"
+flowie run prompt --agent scout "reply with a one-line summary of this repo"
 ```
 
 Check the latest runs:
 
 ```bash
-just sessions
+flowie sessions
 ```
 
-Or query SQLite directly:
+Open the terminal observability summary:
 
 ```bash
-sqlite3 .flowie/data/flowie.db \
-  "select adw_id, status, request from sessions order by started_at desc limit 5;"
+flowie obs
 ```
 
 ## Daily Use
 
-Use the `justfile` recipes stamped into your repo:
+Use the executable directly:
 
 ```bash
-just scout "where is authentication handled?"
-just plan "add a /health endpoint"
-just plan-build "add a /health endpoint"
-just sdlc "add a /health endpoint and cover it with tests"
-just simple-sdlc "implement the requested feature, test it, review it, and document it"
+flowie run scout "where is authentication handled?"
+flowie run plan "add a /health endpoint"
+flowie run plan-build "add a /health endpoint"
+flowie run plan-build-test "add a /health endpoint and cover it with tests"
+flowie run simple-sdlc "implement the requested feature, test it, review it, and document it"
 ```
 
 Each workflow prints an `adw_id`. Use it to inspect the run:
 
 ```bash
-just phases <adw_id>
-just tail <adw_id>
-just procs <adw_id>
+flowie phases <adw_id>
+flowie tail <adw_id>
+flowie procs <adw_id>
 ```
 
 You can resume or chain work under the same ADW session:
@@ -165,7 +163,7 @@ For alternate rosters, create another config and pass it explicitly:
 flowie run plan-build "..." --config .flowie/flowie.frontier.config.yaml
 ```
 
-With `just`:
+With optional `just` recipes:
 
 ```bash
 FLOWIE_CONFIG=.flowie/flowie.frontier.config.yaml just sdlc "..."
@@ -195,31 +193,25 @@ flowie eject adw plan-build
 
 ## Web Visualizer
 
-Install Bun if needed, then in a target repo with a `flowie.db`:
+The installed executable provides terminal observability:
 
 ```bash
-just obs
+flowie obs
+```
+
+The Bun/Vite web visualizer is currently a source-checkout tool. To run it manually from this repository against a target repo with a `flowie.db`:
+
+```bash
+cd apps/visualizer
+bun install
+FLOWIE_DB=/path/to/target/repo/.flowie/data/flowie.db PORT=4600 bun run server/index.ts
+PORT=4601 bun run dev --host 127.0.0.1
 ```
 
 The UI runs at:
 
 ```text
 http://localhost:4601
-```
-
-The API defaults to:
-
-```text
-http://localhost:4600
-```
-
-You can also run the visualizer manually from this repository:
-
-```bash
-cd apps/visualizer
-bun install
-FLOWIE_DB=/path/to/target/repo/.flowie/data/flowie.db PORT=4600 bun run server/index.ts
-PORT=4600 bun run dev --host 127.0.0.1
 ```
 
 ## Using It From Codex

@@ -2,7 +2,7 @@
 
 The full `flowie.config.yaml` spec: every field, how defaults merge, and how model / tools / write boundaries map onto the selected coding agent.
 
-It lives at `.flowie/flowie.config.yaml`. Every `adw_*.py` and the justfile use that path by default; pass `--config <path>` to run a different roster.
+It lives at `.flowie/flowie.config.yaml`. Every `adw_*.py` uses that path by default; pass `--config <path>` to run a different roster.
 
 ## Shape
 
@@ -40,7 +40,7 @@ agents:
 | `tools` | Intent metadata in Codex mode. Codex receives its normal tool surface; safety is enforced by `writes` and `protected_files` after the call. |
 | `protected_files` | Paths no agent may modify unless it explicitly names them in its own `writes`. Default protects the factory machinery. |
 | `data_dir` | Runtime home. Sessions land at `{data_dir}/sessions/{adw_id}/{agent_name}/`. |
-| `observability.db` | SQLite trace db. `tracer.py` writes directly; the visualizer and `just` recipes read it. |
+| `observability.db` | SQLite trace db. `tracer.py` writes directly; `flowie obs`, `flowie sessions`, and the optional visualizer read it. |
 | `prompt_engineering.system` / `user` | Required prompt files. `agents.validate()` fails before spawning Codex if either path is missing. |
 | `writes` | Enforced repo write boundary. Omitted = unrestricted except protected files. `[]` = read-only with respect to the repo. A list = only those paths. |
 

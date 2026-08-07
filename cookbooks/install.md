@@ -28,7 +28,7 @@ uv run ~/.codex/skills/flowie/scripts/flowie.py init
 | `.flowie/adws/` | custom or ejected ADWs only | yes |
 | `.flowie/data/flowie.db` | initialized SQLite trace db | no — under `.flowie/data/` |
 | `.flowie/data/sessions/` | raw run records | no — under `.flowie/data/` |
-| `justfile` | recipes that call `flowie run ...` | yes |
+| `justfile` | optional recipes that call `flowie ...`; created only with `flowie init --with-justfile` | yes |
 | `.env.sample` | environment template | yes |
 
 The installer appends `.flowie/data/`, `.env`, `__pycache__/`, and `*.pyc` to

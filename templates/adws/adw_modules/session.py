@@ -21,8 +21,8 @@ from .utils import engineer_name, new_id
 def _finalize_when_killed(run: Run) -> None:
     """A killed run still closes its own trace.
 
-    Python's default SIGTERM handling exits without unwinding, so `just kill`
-    (or any `kill <pid>`) would leave the session reading `running` forever and
+    Python's default SIGTERM handling exits without unwinding, so `kill <pid>`
+    would leave the session reading `running` forever and
     its process rows open — the trace would claim work is in flight that is
     already dead. Turning the signal into SystemExit both finalizes here and
     lets the phase context manager record the phase as failed on the way out.
