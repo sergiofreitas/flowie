@@ -16,6 +16,7 @@ import unittest
 from pathlib import Path
 
 from flowie_runtime.codex_schema import prepare_output_schema
+from flowie_runtime.web_server import FlowieWebDb
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -146,6 +147,19 @@ class InstallSmokeTest(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("flowie db not found", result.stderr + result.stdout)
+
+    def test_python_web_db_reads_initialized_db(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="flowie-cli-") as tmp:
+            target = Path(tmp)
+            init_result = run_flowie("init", cwd=target)
+            self.assertEqual(init_result.returncode, 0, init_result.stderr + init_result.stdout)
+
+            db = FlowieWebDb(target / ".flowie" / "data" / "flowie.db")
+            health = db.health()
+
+            self.assertTrue(health["ok"])
+            self.assertEqual(health["sessions"], 0)
+            self.assertEqual(db.sessions(), [])
 
 
 class MakeAdwSmokeTest(unittest.TestCase):

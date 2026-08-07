@@ -17,7 +17,7 @@ streams events into SQLite for terminal queries or the web visualizer.
 - Builtin ADWs for scout, plan, build, test, review, document, and composed SDLC flows.
 - A project-local `.flowie/` overlay for config, prompts, custom ADWs, quality commands, and runtime data.
 - SQLite observability in `.flowie/data/flowie.db`, with CLI commands for sessions, phases, events, and running processes.
-- A Bun/Vite visualizer command for inspecting sessions, phases, events, gates, prompts, and envelopes.
+- A bundled web visualizer for inspecting sessions, phases, events, gates, prompts, and envelopes.
 
 ## Requirements
 
@@ -28,7 +28,7 @@ codex --version
 uv --version
 ```
 
-Optional for local shortcuts and the web visualizer:
+Optional for local shortcuts and frontend development:
 
 ```bash
 just --version
@@ -120,6 +120,12 @@ Open the web visualizer:
 flowie web
 ```
 
+Then open the URL it prints, normally:
+
+```text
+http://127.0.0.1:4601
+```
+
 ## Daily Use
 
 Use the executable directly:
@@ -205,14 +211,23 @@ From a target repo initialized with Flowie:
 flowie web
 ```
 
-By default this reads `.flowie/data/flowie.db`, starts the API on `4600`, and opens the Vite UI server on `4601` when no built `dist/` is present.
+By default this reads `.flowie/data/flowie.db` and serves both the API and the bundled frontend on port `4601`.
+
+The usual flow is:
+
+```bash
+flowie init
+flowie run scout "where is authentication handled?"
+flowie web
+```
+
+Then open the printed URL. The web view shows sessions, phase timelines, events, prompts, gates, envelopes, tokens, and costs.
 
 Useful options:
 
 ```bash
-flowie web --port 4701 --api-port 4700
+flowie web --port 4701
 flowie web --db /path/to/repo/.flowie/data/flowie.db
-flowie web --api-only
 ```
 
 The UI runs at:
@@ -221,7 +236,13 @@ The UI runs at:
 http://localhost:4601
 ```
 
-The command uses the bundled Bun/Vite visualizer. If dependencies are missing in a source checkout, run `bun install` in `apps/visualizer` once.
+The installed Python package serves the already-built frontend assets. Bun is only needed when developing the visualizer itself:
+
+```bash
+cd apps/visualizer
+bun install
+bun run build
+```
 
 ## Using It From Codex
 

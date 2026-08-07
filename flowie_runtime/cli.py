@@ -5,13 +5,10 @@ from __future__ import annotations
 import argparse
 import ast
 import importlib.metadata
-import os
 import runpy
 import shutil
 import sqlite3
-import subprocess
 import sys
-import time
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -408,96 +405,14 @@ def obs(args: argparse.Namespace) -> int:
     return 0
 
 
-def _visualizer_dir() -> Path:
-    return Path(__file__).resolve().parents[1] / "apps" / "visualizer"
-
-
-def _require_visualizer() -> Path:
-    path = _visualizer_dir()
-    if not (path / "server" / "index.ts").is_file():
-        raise SystemExit(
-            "Flowie web visualizer app not found. "
-            "Run this command from a Flowie source checkout or install one that ships apps/visualizer."
-        )
-    if shutil.which("bun") is None:
-        raise SystemExit("`bun` is required for `flowie web`; install Bun and try again")
-    if not (path / "node_modules").is_dir():
-        raise SystemExit(f"visualizer dependencies not installed; run `bun install` in {path}")
-    return path
-
-
-def _terminate(processes: Sequence[subprocess.Popen[object]]) -> None:
-    for proc in processes:
-        if proc.poll() is None:
-            proc.terminate()
-    deadline = time.monotonic() + 5
-    for proc in processes:
-        if proc.poll() is not None:
-            continue
-        remaining = max(0.0, deadline - time.monotonic())
-        try:
-            proc.wait(timeout=remaining)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-
-
-def _wait_for_processes(processes: Sequence[subprocess.Popen[object]]) -> int:
-    try:
-        while True:
-            for proc in processes:
-                code = proc.poll()
-                if code is not None:
-                    return code
-            time.sleep(0.2)
-    except KeyboardInterrupt:
-        return 130
-    finally:
-        _terminate(processes)
-
-
 def web(args: argparse.Namespace) -> int:
     db_path = Path(args.db or ".flowie/data/flowie.db").resolve()
     if not db_path.exists():
         raise SystemExit(f"flowie db not found at {db_path}; run `flowie init` first")
 
-    visualizer = _require_visualizer()
-    dist_index = visualizer / "dist" / "index.html"
-    use_dev_server = args.dev or (not args.api_only and not dist_index.is_file())
+    from .web_server import serve
 
-    env = os.environ.copy()
-    env["FLOWIE_DB"] = str(db_path)
-    env["PORT"] = str(args.api_port)
-
-    processes: list[subprocess.Popen[object]] = []
-    api_cmd = ["bun", "run", "server/index.ts"]
-    processes.append(subprocess.Popen(api_cmd, cwd=visualizer, env=env))
-    time.sleep(0.6)
-    if processes[0].poll() is not None:
-        return processes[0].returncode or 1
-
-    if use_dev_server:
-        ui_cmd = [
-            "bun",
-            "run",
-            "dev",
-            "--",
-            "--host",
-            args.host,
-            "--port",
-            str(args.port),
-        ]
-        processes.append(subprocess.Popen(ui_cmd, cwd=visualizer, env=env))
-        print(f"Flowie web UI:  http://{args.host}:{args.port}", flush=True)
-        print(f"Flowie API:     http://{args.host}:{args.api_port}", flush=True)
-    elif dist_index.is_file():
-        print(f"Flowie web UI:  http://{args.host}:{args.api_port}", flush=True)
-    else:
-        print(f"Flowie API:     http://{args.host}:{args.api_port}", flush=True)
-        print("No built UI found; omit --api-only or run the visualizer build first.", flush=True)
-
-    print(f"Flowie db:      {db_path}", flush=True)
-    print("Press Ctrl-C to stop.", flush=True)
-    return _wait_for_processes(processes)
+    return serve(db_path, args.host, args.port)
 
 
 def parser() -> argparse.ArgumentParser:
@@ -557,11 +472,8 @@ def parser() -> argparse.ArgumentParser:
 
     web_p = sub.add_parser("web", help="start the web visualizer for Flowie sessions")
     web_p.add_argument("--db", default=None, help="path to flowie.db (default: .flowie/data/flowie.db)")
-    web_p.add_argument("--host", default="127.0.0.1", help="host for the Vite UI dev server")
-    web_p.add_argument("--port", type=int, default=4601, help="UI port when using the dev server")
-    web_p.add_argument("--api-port", type=int, default=4600, help="API port")
-    web_p.add_argument("--dev", action="store_true", help="force the Vite dev server even when dist exists")
-    web_p.add_argument("--api-only", action="store_true", help="start only the API/static server")
+    web_p.add_argument("--host", default="127.0.0.1", help="host to bind")
+    web_p.add_argument("--port", type=int, default=4601, help="port to bind")
     web_p.set_defaults(func=web)
     return p
 

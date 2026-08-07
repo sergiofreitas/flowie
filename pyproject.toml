@@ -29,4 +29,7 @@ include = ["flowie_runtime*"]
 flowie_runtime = [
   "templates/*",
   "templates/prompt_engineering/*/*",
+  "web/dist/*",
+  "web/dist/assets/*",
+  "web/dist/models/*",
 ]

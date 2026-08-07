@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 build/
 dist/
+!flowie_runtime/web/
+!flowie_runtime/web/dist/
+!flowie_runtime/web/dist/**
 *.egg-info/
 
 # Local env/secrets
