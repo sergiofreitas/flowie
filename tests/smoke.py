@@ -45,6 +45,12 @@ def run_flowie(*args: str, cwd: Path) -> subprocess.CompletedProcess[str]:
 
 
 class InstallSmokeTest(unittest.TestCase):
+    def test_cli_version_reports_flowie_version(self) -> None:
+        result = run_flowie("--version", cwd=ROOT)
+
+        self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+        self.assertRegex(result.stdout.strip(), r"^flowie \d+\.\d+\.\d+")
+
     def test_install_initializes_sqlite_schema_and_gitignore(self) -> None:
         with tempfile.TemporaryDirectory(prefix="flowie-install-") as tmp:
             target = Path(tmp)

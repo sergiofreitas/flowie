@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.metadata
 import runpy
 import shutil
 import sqlite3
@@ -35,6 +36,18 @@ GITIGNORE_ENTRIES = [
     "__pycache__/",
     "*.pyc",
 ]
+
+
+def version() -> str:
+    try:
+        return importlib.metadata.version("flowie")
+    except importlib.metadata.PackageNotFoundError:
+        pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+        if pyproject.is_file():
+            for line in pyproject.read_text().splitlines():
+                if line.startswith("version = "):
+                    return line.split('"', 2)[1]
+        return "unknown"
 
 
 def _copy_tree(src: Path, dest: Path, force: bool, changed: list[str]) -> None:
@@ -212,6 +225,7 @@ def obs(_args: argparse.Namespace) -> int:
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="flowie")
+    p.add_argument("--version", action="version", version=f"flowie {version()}")
     sub = p.add_subparsers(dest="command", required=True)
 
     init_p = sub.add_parser("init", help="initialize .flowie in this repo")
