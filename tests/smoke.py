@@ -139,6 +139,14 @@ class InstallSmokeTest(unittest.TestCase):
             self.assertIn(".flowie/flowie.config.yaml", rosters_result.stdout)
             self.assertIn("scout", rosters_result.stdout)
 
+    def test_cli_web_requires_initialized_db(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="flowie-cli-") as tmp:
+            target = Path(tmp)
+            result = run_flowie("web", cwd=target)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("flowie db not found", result.stderr + result.stdout)
+
 
 class MakeAdwSmokeTest(unittest.TestCase):
     def test_generated_adw_uses_current_run_finish_contract(self) -> None:

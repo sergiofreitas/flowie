@@ -17,7 +17,7 @@ streams events into SQLite for terminal queries or the web visualizer.
 - Builtin ADWs for scout, plan, build, test, review, document, and composed SDLC flows.
 - A project-local `.flowie/` overlay for config, prompts, custom ADWs, quality commands, and runtime data.
 - SQLite observability in `.flowie/data/flowie.db`, with CLI commands for sessions, phases, events, and running processes.
-- An optional Bun/Vite visualizer for inspecting sessions, phases, events, gates, prompts, and envelopes from a source checkout.
+- A Bun/Vite visualizer command for inspecting sessions, phases, events, gates, prompts, and envelopes.
 
 ## Requirements
 
@@ -114,6 +114,12 @@ Open the terminal observability summary:
 flowie obs
 ```
 
+Open the web visualizer:
+
+```bash
+flowie web
+```
+
 ## Daily Use
 
 Use the executable directly:
@@ -193,19 +199,20 @@ flowie eject adw plan-build
 
 ## Web Visualizer
 
-The installed executable provides terminal observability:
+From a target repo initialized with Flowie:
 
 ```bash
-flowie obs
+flowie web
 ```
 
-The Bun/Vite web visualizer is currently a source-checkout tool. To run it manually from this repository against a target repo with a `flowie.db`:
+By default this reads `.flowie/data/flowie.db`, starts the API on `4600`, and opens the Vite UI server on `4601` when no built `dist/` is present.
+
+Useful options:
 
 ```bash
-cd apps/visualizer
-bun install
-FLOWIE_DB=/path/to/target/repo/.flowie/data/flowie.db PORT=4600 bun run server/index.ts
-PORT=4601 bun run dev --host 127.0.0.1
+flowie web --port 4701 --api-port 4700
+flowie web --db /path/to/repo/.flowie/data/flowie.db
+flowie web --api-only
 ```
 
 The UI runs at:
@@ -213,6 +220,8 @@ The UI runs at:
 ```text
 http://localhost:4601
 ```
+
+The command uses the bundled Bun/Vite visualizer. If dependencies are missing in a source checkout, run `bun install` in `apps/visualizer` once.
 
 ## Using It From Codex
 
