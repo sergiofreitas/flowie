@@ -75,6 +75,27 @@ jobs:
           python -m pip install --upgrade pip build
           python -m build
 
+      - name: Smoke test built wheel
+        run: |
+          python -m venv /tmp/flowie-wheel-smoke
+          /tmp/flowie-wheel-smoke/bin/python -m pip install dist/*.whl
+          /tmp/flowie-wheel-smoke/bin/python - <<'PY'
+          from flowie_runtime.codex_schema import prepare_output_schema
+
+          schema = prepare_output_schema({
+              "type": "object",
+              "properties": {
+                  "status": {"type": "string"},
+                  "summary": {"type": "string", "default": ""},
+                  "artifacts": {"type": "array", "items": {"type": "string"}},
+                  "notes_for_next_agent": {"type": "string", "default": ""},
+              },
+          })
+          expected = {"status", "summary", "artifacts", "notes_for_next_agent"}
+          assert set(schema["required"]) == expected, schema
+          assert "default" not in schema["properties"]["summary"], schema
+          PY
+
       - name: Upload distributions
         uses: actions/upload-artifact@v4
         with:
